@@ -1,13 +1,15 @@
 import { db } from "@/lib/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import BrowseClient from "@/components/BrowseClient";
 
 export const dynamic = "force-dynamic";
+
+// Turn Firestore doc into JSON-safe object
+function docToPlain(docSnap) {
+  const data = docSnap.data();
+  const plain = JSON.parse(JSON.stringify(data));
+  return { id: docSnap.id, ...plain };
+}
 
 async function getProductsWithPharmacy() {
   const [pharmSnap, prodSnap] = await Promise.all([
@@ -16,15 +18,17 @@ async function getProductsWithPharmacy() {
   ]);
 
   const pharmacies = Object.fromEntries(
-    pharmSnap.docs.map((d) => [d.id, d.data().name || "Unknown pharmacy"])
+    pharmSnap.docs.map((d) => {
+      const p = docToPlain(d);
+      return [p.id, p.name || "Unknown pharmacy"];
+    })
   );
 
   return prodSnap.docs.map((d) => {
-    const data = d.data();
+    const p = docToPlain(d);
     return {
-      id: d.id,
-      ...data,
-      pharmacyName: pharmacies[data.pharmacyId] || "Unknown pharmacy",
+      ...p,
+      pharmacyName: pharmacies[p.pharmacyId] || "Unknown pharmacy",
     };
   });
 }

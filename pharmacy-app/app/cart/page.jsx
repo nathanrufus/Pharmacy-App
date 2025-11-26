@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { placeOrder } from "./actions";
 
 export default function CartPage() {
-  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { items, updateQuantity, removeItem, clearCart, total } = useCart();
   const [submitting, setSubmitting] = useState(false);
@@ -22,13 +20,6 @@ export default function CartPage() {
       </div>
     );
   }
-
-  const handleLocalSubmit = () => {
-    // This runs BEFORE server action – we optimistically clear cart
-    setSubmitting(true);
-    setError("");
-    clearCart();
-  };
 
   return (
     <div className="space-y-6">
@@ -47,8 +38,21 @@ export default function CartPage() {
         </p>
       ) : (
         <form
-          action={placeOrder}
-          onSubmit={handleLocalSubmit}
+          // We handle submit here and call the server action manually
+          action={async (formData) => {
+            setSubmitting(true);
+            setError("");
+
+            try {
+              await placeOrder(formData);
+              // If placeOrder redirects (recommended), code below never runs.
+              // If it doesn’t, you could optionally clearCart() here.
+            } catch (e) {
+              console.error(e);
+              setError("Something went wrong placing your order.");
+              setSubmitting(false);
+            }
+          }}
           className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
         >
           {/* Hidden fields for server action */}

@@ -5,10 +5,10 @@ import {
   collection,
   addDoc,
   doc,
-  getDoc,
   runTransaction,
 } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function placeOrder(formData) {
   const userId = formData.get("userId")?.toString();
@@ -29,7 +29,7 @@ export async function placeOrder(formData) {
     return;
   }
 
-  // Transaction: check stock + decrement quantities
+  // Check stock + decrement quantities in a transaction
   await runTransaction(db, async (tx) => {
     for (const item of items) {
       const prodRef = doc(db, "products", item.productId);
@@ -62,6 +62,9 @@ export async function placeOrder(formData) {
     updatedAt: new Date(),
   });
 
+  // Make sure orders page sees the new data
   revalidatePath("/orders");
-  revalidatePath("/admin/orders");
+
+  //  Redirect the user to their orders page
+  redirect("/orders");
 }
