@@ -3,13 +3,22 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "firebase/auth";
+import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, role, isAuthenticated, loading } = useAuth();
+  const { items } = useCart();
+
+  // Track when we're mounted on the client to avoid hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -20,6 +29,12 @@ export default function Navbar() {
     pathname === href
       ? "text-blue-600 border-b-2 border-blue-600"
       : "text-slate-600 hover:text-blue-600";
+
+  // Total items in cart (sum of quantities)
+  const cartCount = items?.reduce(
+    (sum, item) => sum + (item.quantity || 0),
+    0
+  ) ?? 0;
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
@@ -39,26 +54,57 @@ export default function Navbar() {
         {/* Main nav */}
         <div className="hidden items-center gap-4 md:flex">
           {/* Public / user routes */}
-          <Link href="/browse" className={`text-sm font-medium ${isActive("/browse")}`}>
+          <Link
+            href="/browse"
+            className={`text-sm font-medium ${isActive("/browse")}`}
+          >
             Browse
           </Link>
-          <Link href="/pharmacies" className={`text-sm font-medium ${isActive("/pharmacies")}`}>
+          <Link
+            href="/pharmacies"
+            className={`text-sm font-medium ${isActive("/pharmacies")}`}
+          >
             Pharmacies
           </Link>
-          <Link href="/map" className={`text-sm font-medium ${isActive("/map")}`}>
+          <Link
+            href="/map"
+            className={`text-sm font-medium ${isActive("/map")}`}
+          >
             Map
+          </Link>
+
+          {/* Cart link (everyone can see) */}
+          <Link
+            href="/cart"
+            className={`relative flex items-center gap-1 text-sm font-medium ${isActive(
+              "/cart"
+            )}`}
+          >
+            Cart
+            {/* Only render badge after mount to avoid hydration mismatch */}
+            {mounted && cartCount > 0 && (
+              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-semibold text-white">
+                {cartCount}
+              </span>
+            )}
           </Link>
 
           {/* User-only */}
           {isAuthenticated && role !== "admin" && (
-            <Link href="/orders" className={`text-sm font-medium ${isActive("/orders")}`}>
+            <Link
+              href="/orders"
+              className={`text-sm font-medium ${isActive("/orders")}`}
+            >
               My Orders
             </Link>
           )}
 
           {/* Admin-only */}
           {isAuthenticated && role === "admin" && (
-            <Link href="/admin" className={`text-sm font-medium ${isActive("/admin")}`}>
+            <Link
+              href="/admin"
+              className={`text-sm font-medium ${isActive("/admin")}`}
+            >
               Admin
             </Link>
           )}

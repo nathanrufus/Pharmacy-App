@@ -60,9 +60,9 @@ export default function AdminLayout({ children }) {
           <Link href="/admin/products" className={navLinkClasses("/admin/products")}>
             Products
           </Link>
-          <Link href="/admin/orders" className={navLinkClasses("/admin/orders")}>
+          {/* <Link href="/admin/orders" className={navLinkClasses("/admin/orders")}>
             Orders
-          </Link>
+          </Link> */}
         </nav>
       </aside>
 
